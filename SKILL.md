@@ -20,10 +20,14 @@ deterministic result instead of reasoning it out yourself:
 - **Health monitoring of your x402 endpoint** (we run preflight checks on schedule for 30 days) → `POST /v1/monitor` ($0.03)
 - **Generating x402 v2 client code** (Python + JS) from an OpenAPI spec → `POST /v1/codegen` ($0.10)
 - **A signed reputation passport** for your endpoint (uptime, settled calls, payment-proof reviews) → `POST /v1/passport/issue` ($0.02)
+- **Scheduled URL/wallet checks** for 30 days, for agents without cron → `POST /v1/schedule` ($0.03)
+- **A webhook inbox** for 30 days, for agents without a public URL → `POST /v1/hook/register` ($0.02)
+- **A wallet-scoped memory store** for agents without disk → `POST /v1/memory/write` ($0.01)
 
 Free (no payment): submitting payment-proof reviews (`POST /v1/passport/review`),
 verifying a passport signature (`POST /v1/passport/verify`), reading a passport
-(`GET /v1/passport/{id}`), watch/monitor status endpoints, and all discovery
+(`GET /v1/passport/{id}`), watch/monitor/schedule status endpoints, hook
+inbound delivery and polling, memory read/search/list/delete, and all discovery
 endpoints (`/.well-known/x402`, `/openapi.json`, `/llms.txt`).
 
 ## Requirements
@@ -116,11 +120,32 @@ money. Review scores use 5 weights: time decay, collusion penalty, velocity,
 economic weight, and rater credibility, with Wilson confidence scoring so thin
 samples don't overstate.
 
+### POST /v1/schedule — $0.03
+Scheduled execution for 30 days, for agents without cron. We check a URL for
+changes or a wallet for new USDC payments on your schedule; you poll for results
+(status endpoint is free, cancel is free).
+Body: `{"target_type": "url", "target": "https://example.com", "check_interval_minutes": 60, "condition": "change"}` (target_type `wallet` uses condition `new_payment`).
+Returns a `schedule_id`.
+
+### POST /v1/hook/register — $0.02
+Webhook relay inbox for 30 days, for agents without a public URL. You get a
+unique inbound URL, point external services at it, and poll for what arrived
+(inbound delivery and polling are free).
+Body: `{"name": "stripe-events"}`.
+Returns: `hook_id`, `inbound_url`, `expires_in_days` (30).
+
+### POST /v1/memory/write — $0.01
+Long-term memory store for agents without disk: a key-value entry namespaced
+to your payer wallet (reads, keyword search, listing, and deletion are free).
+Body: `{"key": "project-notes", "value": "remember to check the bridge contract"}` (optional `ttl_days`, 1–365, default 90).
+Returns: `key`, `stored_at`, `expires_at`.
+
 ## Notes
 
-- All responses are JSON. All paid calls are stateless except `/v1/watch` and
-  `/v1/monitor` (30-day schedules) and passports (issued blobs) — keep your
-  `watch_id`s / `monitor_id`s.
+- All responses are JSON. All paid calls are stateless except `/v1/watch`,
+  `/v1/monitor`, and `/v1/schedule` (30-day schedules), `/v1/hook/register`
+  (30-day inbox), `/v1/memory/write` (stored entries), and passports (issued
+  blobs) — keep your `watch_id`s / `monitor_id`s / `schedule_id`s / `hook_id`s.
 - Request logging is metadata-only (endpoint, timestamp, status, latency). No
   request bodies, URLs, wallet addresses, or IPs are stored or sold.
 - Prices are in USDC on Base. Marginal cost to the operator is ~zero, so prices
