@@ -26,6 +26,7 @@ deterministic result instead of reasoning it out yourself:
 - **A trade-ready symbol brief** (price, 24h change, volume, gas/fees, headlines, risk flag — data only, not investment advice; crypto-only, 31 symbols) → `POST /v1/brief` ($0.03)
 - **A discoverability + cap-fit probe** for your own x402 endpoint (scored 0–100: Bazaar listing, discovery block, description, buyer-cap fit) → `POST /v1/discover` ($0.005)
 - **A seller net-revenue calculator** (net per call after facilitator fees, break-even price, monthly net) → `POST /v1/netrev` ($0.002)
+- **BGE-M3 text embeddings** (up to 16 texts per call, 1024-dim dense vectors, served locally on GPU) → `POST /v1/embeddings` ($0.002)
 
 Free (no payment): submitting payment-proof reviews (`POST /v1/passport/review`),
 verifying a passport signature (`POST /v1/passport/verify`), reading a passport
@@ -164,6 +165,13 @@ fees, break-even price, and monthly net at N calls/day. Pure deterministic
 math over a cached facilitator fee table (CDP, PayAI, OMNIGATE, 402Proof).
 Body: `{"price_usdc": 0.01, "chain": "eip155:8453", "facilitator": "cdp", "calls_per_day": 100}` (facilitator and calls_per_day optional; omit facilitator to compare all).
 Returns: per-facilitator `net_per_call_usdc`, break-even price, monthly net, cheapest facilitator.
+
+### POST /v1/embeddings — $0.002
+BGE-M3 text embeddings: up to 16 texts per call, 1024-dim dense vectors,
+computed locally on a GPU. Normalized vectors (unit length).
+Body: `{"texts": ["Hello, world!", "x402 payments for agents"]}`.
+Returns: `model` (BGE-M3), `dimensions` (1024), `embeddings` (one vector per
+text, in input order), `usage` (`texts` count).
 
 ## Notes
 
