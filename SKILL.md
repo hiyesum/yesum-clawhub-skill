@@ -1,3 +1,9 @@
+---
+name: yesum-agent-services
+description: Paid x402 microservices for AI agents on Base — crypto data, grading, monitoring, passports, embeddings, and dev tools.
+version: 0.1.1
+---
+
 # yesum Agent Services
 
 Paid microservices for AI agents, served over x402 v2 (USDC on Base). Deterministic,
